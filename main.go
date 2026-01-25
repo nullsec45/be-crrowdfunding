@@ -8,6 +8,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"os"
+	"github.com/gin-gonic/gin"
+	"crowdfunding-api/handler"
 
 )
 var cfgFile string
@@ -37,10 +39,14 @@ func main(){
 	userService := user.NewService(userRepository)	
 
 
-	userInput := user.RegisterUserInput{}
-	// userInput.Name="Test"
-	// userInput.Email="fajar@gmail.com"
-	// userInput.Occupation="Anak Band"
-	// userInput.Password="password"
-	userService.RegisterUser(userInput)
+
+
+	userHandler := handler.NewUserHandler(userService)
+	
+	router := gin.Default()
+	api := router.Group("/api/v1")
+
+	api.POST("/users", userHandler.RegisterUser)
+
+	router.Run()
 }
