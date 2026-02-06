@@ -5,6 +5,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"crowdfunding-api/helper"
+	"fmt"
+	"path/filepath"
+	"time"
+	"mime"
 )
 
 type userHandler struct {
@@ -114,6 +118,51 @@ func  (h *userHandler) CheckEmailAvailability(c *gin.Context){
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *userHandler) UploadAvatar(c *gin.Context){
+func (h *userHandler) UploadAvatar(c *gin.Context) {
+    file, err := c.FormFile("avatar")
+    if err != nil {
+        data := gin.H{"is_uploaded": false}
+        response := helper.APIResponse("Failed to upload avatar image", http.StatusBadRequest, "error", data)
+        c.JSON(http.StatusBadRequest, response)
+        return
+    }
+
+	contentType := file.Header.Get("Content-Type")
+	extensions, err := mime.ExtensionsByType(contentType)
+    
+    if err != nil || len(extensions) == 0 {
+        // Jika tidak dikenali, fallback ke ekstensi manual atau tolak
+        response := helper.APIResponse("Unknown file type", http.StatusBadRequest, "error", nil)
+        c.JSON(http.StatusBadRequest, response)
+        return
+    }
 	
+    userID := 2
+	extension := filepath.Ext(file.Filename)
+	fmt.Println("extension", extension)
+    path := fmt.Sprintf("images/%d-%d%s", userID, time.Now().Unix(), extension)
+
+
+
+    if err := c.SaveUploadedFile(file, path); err != nil {
+        data := gin.H{"is_uploaded": false}
+        response := helper.APIResponse("Failed to save file", http.StatusBadRequest, "error", data)
+        c.JSON(http.StatusBadRequest, response)
+        return
+    }
+
+   
+    _, err = h.userService.SaveAvatar(userID, path)
+
+    if err != nil {
+        data := gin.H{"is_uploaded": false}
+        response := helper.APIResponse("Failed to update database", http.StatusBadRequest, "error", data)
+        c.JSON(http.StatusBadRequest, response)
+        return
+    }
+
+    // Jika berhasil
+    data := gin.H{"is_uploaded": true}
+    response := helper.APIResponse("Avatar successfully uploaded", http.StatusOK, "success", data)
+    c.JSON(http.StatusOK, response)
 }

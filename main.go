@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "log"
 	"crowdfunding-api/config"
 	"fmt"
 	"crowdfunding-api/user"
@@ -10,8 +9,9 @@ import (
 	"os"
 	"github.com/gin-gonic/gin"
 	"crowdfunding-api/handler"
-
 )
+
+
 var cfgFile string
 
 func main(){
@@ -49,6 +49,7 @@ func main(){
 	api.POST("/register", userHandler.RegisterUser)
 	api.POST("/login", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
+	api.POST("/avatars", userHandler.UploadAvatar)
 
 	router.Run()
 }
