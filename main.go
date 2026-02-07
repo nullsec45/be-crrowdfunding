@@ -4,6 +4,7 @@ import (
 	"crowdfunding-api/config"
 	"fmt"
 	"crowdfunding-api/user"
+	"crowdfunding-api/auth"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"os"
@@ -37,11 +38,9 @@ func main(){
 
 	userRepository := user.NewRepository(db.DB)
 	userService := user.NewService(userRepository)	
+	authService := auth.NewService(cfg)
 
-
-
-
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userService, authService)
 	
 	router := gin.Default()
 	api := router.Group("/api/v1")
