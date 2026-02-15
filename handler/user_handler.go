@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 	"mime"
+	"os"
 )
 
 type userHandler struct {
@@ -151,18 +152,27 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
 	extensions, err := mime.ExtensionsByType(contentType)
     
     if err != nil || len(extensions) == 0 {
-        // Jika tidak dikenali, fallback ke ekstensi manual atau tolak
         response := helper.APIResponse("Unknown file type", http.StatusBadRequest, "error", nil)
         c.JSON(http.StatusBadRequest, response)
         return
     }
 	
-    userID := 2
+	currentUser := c.MustGet("currentUser").(user.User)
+    userID := currentUser.ID
 	extension := filepath.Ext(file.Filename)
-	fmt.Println("extension", extension)
+
+
+	userExist, err := h.userService.GetUserByID(userID)
+    if err != nil {
+        response := helper.APIResponse("User not found", http.StatusNotFound, "error", nil)
+        c.JSON(http.StatusNotFound, response)
+        return
+    }
+
+	oldFilePath := userExist.AvatarFileName
+
+	
     path := fmt.Sprintf("images/%d-%d%s", userID, time.Now().Unix(), extension)
-
-
 
     if err := c.SaveUploadedFile(file, path); err != nil {
         data := gin.H{"is_uploaded": false}
@@ -181,7 +191,16 @@ func (h *userHandler) UploadAvatar(c *gin.Context) {
         return
     }
 
-    // Jika berhasil
+	if oldFilePath != "" {
+		if _, err := os.Stat(oldFilePath); err == nil {
+			err := os.Remove(oldFilePath)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, err)
+        		return
+			}
+		}
+	}
+
     data := gin.H{"is_uploaded": true}
     response := helper.APIResponse("Avatar successfully uploaded", http.StatusOK, "success", data)
     c.JSON(http.StatusOK, response)
