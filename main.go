@@ -10,8 +10,11 @@ import (
 	"os"
 	"github.com/gin-gonic/gin"
 	"crowdfunding-api/handler"
+	"strings"
+	"crowdfunding-api/helper"
+	"net/http"
+	"github.com/dgrijalva/jwt-go"
 )
-
 
 var cfgFile string
 
@@ -48,7 +51,53 @@ func main(){
 	api.POST("/register", userHandler.RegisterUser)
 	api.POST("/login", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
-	api.POST("/avatars", userHandler.UploadAvatar)
+	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
 
-	router.Run()
+	err = router.Run()
+
+	if err != nil {
+		panic(err)
+	}
 }
+
+func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+
+		if !strings.Contains(authHeader, "Bearer") {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		tokenString := ""
+
+		arrayToken := strings.Split(authHeader, " ")
+
+		if len(arrayToken) == 2 {
+			tokenString=arrayToken[1]
+		}
+
+		token, err := authService.ValidateToken(tokenString)
+
+		claim, ok := token.Claims.(jwt.MapClaims)
+
+		if !ok || !token.Valid {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		}
+
+		userID := int(claim["user_id"].(float64))
+
+		user, err := userService.GetUserByID(userID)
+
+		if err != nil {
+			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		c.Set("currentUser", user)
+	}
+}
+
