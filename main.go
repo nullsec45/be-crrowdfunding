@@ -10,6 +10,7 @@ import (
 	"os"
 	"github.com/gin-gonic/gin"
 	"crowdfunding-api/handler"
+	"crowdfunding-api/campaign"
 	"strings"
 	"crowdfunding-api/helper"
 	"net/http"
@@ -40,18 +41,23 @@ func main(){
 	}
 
 	userRepository := user.NewRepository(db.DB)
+	campaignRepository := campaign.NewRepository(db.DB)
 	userService := user.NewService(userRepository)	
 	authService := auth.NewService(cfg)
+	campaignService := campaign.NewService(campaignRepository)
 
 	userHandler := handler.NewUserHandler(userService, authService)
+	campaignHandler := handler.NewCampaignHandler(campaignService)
 	
 	router := gin.Default()
+	router.Static("/images/","./images")
 	api := router.Group("/api/v1")
 
 	api.POST("/register", userHandler.RegisterUser)
 	api.POST("/login", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
 	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
+	api.GET("/campaigns", campaignHandler.GetCampaigns)
 
 	err = router.Run()
 
