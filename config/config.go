@@ -12,6 +12,7 @@ type App struct {
 	AppEnv       string `json:"app_env"`
 	JwtSecretKey string `json:"jwt_secret_key"`
 	JwtIssuer    string `json:"jwt_issuer"`
+	JwtExp       int    `json:"jwt_exp"`
 }
 
 type MysqlDB struct {
@@ -44,6 +45,7 @@ func NewConfig() *Config {
 			AppEnv:       viper.GetString("APP_ENV"),
 			JwtSecretKey: viper.GetString("JWT_SECRET_KEY"),
 			JwtIssuer:    viper.GetString("JWT_ISSUER"),
+			JwtExp:       viper.GetInt("JWT_EXP"),
 		},
 		Mysql: MysqlDB{
 			Host:      viper.GetString("DB_HOST"), 

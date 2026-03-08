@@ -4,6 +4,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"crowdfunding-api/config"
 	"errors"
+	"time"
 )
 
 type Service interface {
@@ -26,6 +27,7 @@ func (s *jwtService) GenerateToken(userID int) (string, error) {
     
 	claim := jwt.MapClaims{}
 	claim["user_id"] = userID
+	claim["exp"] =  time.Now().Add(time.Duration(s.cfg.App.JwtExp) * time.Minute).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
 
 	signedToken, err := token.SignedString(SECRET_KEY)
